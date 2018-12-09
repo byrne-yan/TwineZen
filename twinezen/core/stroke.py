@@ -13,7 +13,20 @@ class Stroke():
         elif name == "bottom":
             getattr(self,name,self.direction==Direction.DOWN?self.k_to:self.k_from)
         
+    def split_stroke(kseries,prevStroke=None)
+        if prevStroke is None:'identify first direction
+            pass
 
-def split_stroke(kseries)
-    stroke = Stroke(kseries.level)
-    return [stroke]
+        if prevStroke.direction == Direction.UP:
+            return Stroke.split_stroke_up(kseries,prevStroke)
+        else:
+            return Stroke.split_stroke_down(kseries,prevStroke)
+
+    def identify_first_stroke(kseries):
+        'looking for first 
+        
+    def split_stroke_up(kseries,prevStroke):
+        pass
+    
+    def split_stroke_down(kseries,prevStroke):
+        pass    

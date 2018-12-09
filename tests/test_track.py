@@ -24,12 +24,13 @@ class TestTrack():
 
     def test_complete_1(self):
         track = Track()
-        assert track.isComplete()
+        assert not track.isComplete()
 
     def test_complete_2(self):
         track = Track()
         assert not track.isComplete()
 
     def test_exists_twinesection(self):
+        pass
         
         
