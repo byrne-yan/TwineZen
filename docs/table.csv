@@ -1,0 +1,19 @@
+,,start,"down(c,p2)","down(c,p1)","down(c,none)","down(none,none)",down_g,"up(c,p2)","up(c,p1)",up_g,"up(c,none)","up(none,none)"
+,,S0,S1,S2,S3,S4,S5,S6,S7,S8,S9,S10
+start,S0,,,,,,<不选>[5 consecutive fall K],,,<不选>[5 consecutive rise K],,
+"down(c,p2)",S1,,<不选>[new high rise K],,,,<不选>[new low peak],,,<不选>[fall K],,
+,,,<不选>[left inclusion K],,,,,,,,,
+"down(c,p1)",S2,,<不选>[new high rise K],<不选>[left inclusion K],,,<不选>[new low peak],,,,,
+,,,,<不选>[other K],,,,,,,,
+"down(c,none)",S3,,,<不选>[other K],<不选>[left inclusion K],,<不选>[new low peak],,,,,
+"down(none,none)",S4,,,,<不选>[other K],<不选>[left inclusion K],<不选>[new low peak],,,,,
+down_g,S5,,,,,<不选>[rise K],<不选>[left inclusion K],,,,,
+,,,,,,,<不选>[new low peak],,,,,
+"up(c,p2)",S6,,,,,,<不选>[rise K],<不选>[new low fall K],,<不选>[new high peak],,
+,,,,,,,,<不选>[left inclusion],,,,
+"up(c,p1)",S7,,,,,,,<不选>[new low fall K],<不选>[left inclusion],<不选>[new high peak],,
+,,,,,,,,,<不选>[other K],,,
+up_g,S8,,,,,,,,,<不选>[new high K],,<不选>[fall K]
+,,,,,,,,,,<不选>[left inclusion K],,
+"up(c,none)",S9,,,,,,,,<不选>[other K],<不选>[new high peak],<不选>[left inclusion K],
+"up(none,none)",S10,,,,,,,,,<不选>[new high K],<不选>[other K],<不选>[left inclusion K]

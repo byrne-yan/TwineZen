@@ -5,5 +5,5 @@ class Segment():
         pass
     
 
-def split_segment(strokeSeries,current=null):
+def split_segment(strokeSeries,current=None):
     return []
