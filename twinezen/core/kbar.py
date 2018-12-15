@@ -21,8 +21,8 @@ class KBar():
             getattr(self,name,self.k_to if self.direction==Direction.DOWN else self.k_from)
             
     def __repr__(self):
-        return '%sK(%r,lvl=%r, t=%r, top=%r, bottom=%r)' % \
-               ('M' if self.isMerged() else '',self.no, self.level, self.time, self.top, self.bottom)
+        return '%sK(%r,%r)@%r/%r' % \
+               ('M' if self.isMerged() else '', self.bottom, self.top,self.no, self.time)
         
     def includedBy(self,k2):
         return k2.top >= self.top and k2.bottom <=self.bottom

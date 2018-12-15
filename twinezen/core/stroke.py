@@ -7,6 +7,7 @@ class StrokeMaker():
         self.direction = Direction.UNKNOWN
         self.highest = k.top
         self.lowest = k.bottom
+        self.peak = 0
         self.complete = False
         
     def is_up(self):
@@ -17,19 +18,24 @@ class StrokeMaker():
     def lastK(self):
         return self.kseries[-1]
 
+    def __str__(self):
+        dirSymbol = '↑' if self.direction==Direction.UP else ( '↓' if self.direction==Direction.DOWN else '↕')
+        return '%s[%s,%s]@%s%s%s%r' % (len(self.kseries),self.lowest,self.highest,self.peak,dirSymbol,'●' if self.complete else '○',self.kseries)
     def to_stroke(self):
-        if self.direction==Direction.UNKNOWN:
+        if not self.complete:
             return None
         return Stroke(self.direction,self.kseries)
 
         
 class Stroke():
     def __init__(self,direction,kseries):
+        self.kseries = kseries
         self.level = kseries[0].level
         self.direction = direction
         self.k_from = kseries[0]
         self.k_to = kseries[-1]
-        
+        self.lowest = kseries[0 if direction==Direction.UP else -1].bottom
+        self.highest = kseries[-1 if direction==Direction.UP else 0].top
         
     def __get_attr__(self,name):
         if name == "top":
@@ -38,55 +44,96 @@ class Stroke():
             getattr(self,name,self.k_to if self.direction==Direction.DOWN else self.k_from)
     def getFirstStroke(kseries):
         def on_ud1(e):
-            k =e.args[0]
-            e.fsm.stroke = StrokeMaker(k)
+            if hasattr(e.fsm,'stroke') and not e.fsm.stroke.kseries[e.fsm.stroke.peak].includedBy(e.args[0]):
+                stroke = StrokeMaker(e.fsm.stroke.kseries[e.fsm.stroke.peak])
+                stroke.backHops = len(e.fsm.stroke.kseries)-e.fsm.stroke.peak
+##                print('stroke.backHops:%s' % stroke.backHops)
+                e.fsm.stroke = stroke
+            else:
+                e.fsm.stroke = StrokeMaker(e.args[0])
 
         def on_u1(e):
-            print(e.fsm.stroke)
             k =e.args[0]
             s = e.fsm.stroke
             s.kseries.append(k)
             s.highest = k.top
-            s.peak = len(s.kseries)
+            s.peak = len(s.kseries)-1
             s.direction = Direction.UP
 
-        def on_u2_3(e):
-            print(e.fsm.stroke)
+        def on_u2(e):
             k =e.args[0]
             s = e.fsm.stroke
             s.kseries.append(k)
             if e.event == 'rise_k':
                 s.highest = k.top
-                s.peak = len(s.kseries)
+                s.peak = len(s.kseries)-1
 
-        def on_u2_3(e):
-            print(e.fsm.stroke)
+        def on_u3(e):
             k =e.args[0]
             s = e.fsm.stroke
             s.kseries.append(k)
             if e.event == 'rise_k':
                 s.highest = k.top
-                s.peak = len(s.kseries)
+                s.peak = len(s.kseries)-1
 
         def on_u4(e):
-            print(e.fsm.stroke)
             k =e.args[0]
             s = e.fsm.stroke
             s.kseries.append(k)
             s.highest = k.top
-            s.peak = len(s.kseries)
+            s.peak = len(s.kseries)-1
 
         def on_u5(e):
-            print(e.fsm.stroke)
             k =e.args[0]
             s = e.fsm.stroke
             s.complete = True
-    
+            
+        def on_d1(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.kseries.append(k)
+            s.lowest = k.bottom
+            s.peak = len(s.kseries)-1
+            s.direction = Direction.DOWN
+
+        def on_d2_3(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.kseries.append(k)
+            if e.event == 'fall_k':
+                s.lowest = k.bottom
+                s.peak = len(s.kseries)-1
+
+        def on_d2_3(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.kseries.append(k)
+            if e.event == 'fall_k':
+                s.lowest = k.bottom
+                s.peak = len(s.kseries)-1
+
+        def on_d4(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.kseries.append(k)
+            s.lowest = k.bottom
+            s.peak = len(s.kseries)-1
+
+        def on_d5(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.complete = True
+
+        def on_reenter(e):
+            k =e.args[0]
+            s = e.fsm.stroke
+            s.kseries[-1] = s.kseries[-1].merge(k,s.direction)
+            
         def genEvent(fsm,k):
+            print(k)
             if fsm.current == 'start':
                 return 'any_k'
 
-            print('lastK:%s' % fsm.stroke.lastK())
             if k.includedBy(fsm.stroke.lastK()):
                 return 'left_inclusion'
             elif fsm.stroke.lastK().rise(k):
@@ -96,7 +143,7 @@ class Stroke():
                     else:
                         return 'fluctuate_k'
                 else:
-                    if k.top < fsm.stroke.highest:
+                    if k.top > fsm.stroke.highest:
                         return 'stroke_broken'
                     else:
                         return 'fluctuate_k'                
@@ -119,12 +166,11 @@ class Stroke():
                     return 'right_inclusion'
 
         fsm = Fysom({'initial':'start',
-                    'final': 'u5',
                     'events':[
                         {'name':'any_k','src':'start','dst':'ud1'},
                         {'name':'rise_k','src':'ud1','dst':'u1'},
                         {'name':'fall_k','src':'ud1','dst':'d1'},
-                        {'name':'left_inclusion','src':'ud1','dst':'ud1'},
+##                        {'name':'left_inclusion','src':'ud1','dst':'ud1'},
                         {'name':'right_inclusion','src':'ud1','dst':'ud1'},
                         {'name':'rise_k','src':'u1','dst':'u2'},
                         {'name':'fluctuate_k','src':'u1','dst':'u2'},
@@ -142,29 +188,61 @@ class Stroke():
                         {'name':'fluctuate_k','src':'d3','dst':'d4'},
                         {'name':'fluctuate_k','src':'d4','dst':'d5'},
 
-                        {'name':'stroke_broken','src':['u1','u2','u3','u4','d1','d2','d3','d4'],'dst':'ud1'}
+                        {'name':'stroke_broken','src':['u1','u2','u3','u4','d1','d2','d3','d4'],'dst':'ud1'},
+                        {'name':'left_inclusion','src':'ud1','dst':'ud1'},
+                        {'name':'left_inclusion','src':'u1','dst':'u1'},
+                        {'name':'left_inclusion','src':'u2','dst':'u2'},
+                        {'name':'left_inclusion','src':'u3','dst':'u3'},
+                        {'name':'left_inclusion','src':'u4','dst':'u4'},
+                        {'name':'left_inclusion','src':'d1','dst':'d1'},
+                        {'name':'left_inclusion','src':'d2','dst':'d2'},
+                        {'name':'left_inclusion','src':'d3','dst':'d3'},
+                        {'name':'left_inclusion','src':'d4','dst':'d4'}
+                        
                         ],
                     'callbacks':{
                         'onud1':on_ud1,
                         'onu1':on_u1,
-                        'onu2':on_u2_3,
-                        'onu3':on_u2_3,
+                        'onu2':on_u2,
+                        'onu3':on_u3,
                         'onu4':on_u4,
                         'onu5':on_u5,
+                        'ond1':on_d1,
+                        'ond2':on_d2_3,
+                        'ond3':on_d2_3,
+                        'ond4':on_d4,
+                        'ond5':on_d5,
+                        'onreenteru1':on_reenter,
+                        'onreenteru2':on_reenter,
+                        'onreenteru3':on_reenter,
+                        'onreenteru4':on_reenter,
+                        'onreenterd1':on_reenter,
+                        'onreenterd2':on_reenter,
+                        'onreenterd3':on_reenter,
+                        'onreenterd4':on_reenter
                         }
                      }
                     )
+        def printstatechange(e):
+            print('event: %s, src: %s, dst: %s,status:%s' % (e.event, e.src, e.dst,e.fsm.stroke))
+
+        fsm.onchangestate = printstatechange
+        
         assert(fsm.current=='start')
-        for i in  range(len(kseries)):
+        e = genEvent(fsm,kseries[0])
+        fsm.trigger(e,kseries[0])            
+        i = 1
+        while  i < len(kseries):
             k = kseries[i]
-         
+            if hasattr(fsm.stroke,'backHops'):
+                delattr(fsm.stroke,'backHops')
+##            print("K:%s" % k)
             e = genEvent(fsm,k)
-            print('Event:%s,%s' % (e,k))
-            fsm.trigger(e,k)
-            print('State:%s' % fsm.current)
-            if fsm.is_finished():
+            fsm.trigger(e,k)            
+            if fsm.current=='d5' or fsm.current=='u5' :
                 print('Finished')
                 return fsm.stroke.to_stroke()
+            i =  i - getattr(fsm.stroke,'backHops',0) + 1
         return
 
             
@@ -233,7 +311,7 @@ class Stroke():
 ##                elif fsm.lastK.rise(ck):
 ##                    fsm.rise_k(k=ck)
 ##                
-        return [firstStroke]
+        return [firstStroke] if firstStroke is not None else []
                 
 
 
